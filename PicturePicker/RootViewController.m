@@ -10,6 +10,7 @@
 #import <AssetsLibrary/AssetsLibrary.h>
 #import "SHBCell.h"
 #import "ScrollViewController.h"
+#import "GroupViewController.h"
 
 @interface RootViewController ()<UICollectionViewDelegate, UICollectionViewDataSource>
 {
@@ -24,7 +25,7 @@
 
 
 
--(void)allPhotosCollected:(NSArray*)imgArray;
+
 
 @end
 
@@ -35,6 +36,9 @@ static int count=0;
     UICollectionView *_collectionView;
     
     NSMutableDictionary *_dataDic; // 被选中的图片
+    
+    NSMutableArray *_groupArray;
+    NSMutableArray *_medioArray;
 }
 
 - (void)viewDidLoad {
@@ -44,22 +48,31 @@ static int count=0;
     
     self.view.backgroundColor = [UIColor whiteColor];
     _dataDic = [[NSMutableDictionary alloc] initWithCapacity:0];
+    _groupArray = [[NSMutableArray alloc] initWithCapacity:0];
+    _medioArray = [[NSMutableArray alloc] initWithCapacity:0];
     /*
     ALAssetsLibrary *assetsLibrary = [[ALAssetsLibrary alloc]init];//生成整个photolibrary句柄的实例
-    NSMutableArray *mediaArray = [[NSMutableArray alloc]init];//存放media的数组
+    NSMutableArray *mediaArray = [[NSMutableArray alloc] initWithCapacity:0];//存放media的数组
+    NSMutableArray *groupArray = [[NSMutableArray alloc] initWithCapacity:0];//存放相册数组
     
     [assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupAll usingBlock:^(ALAssetsGroup *group, BOOL *stop) {//获取所有group
+        
+        [groupArray addObject:group];
         [group enumerateAssetsUsingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {//从group里面
+            
+            [mediaArray addObject:result];
+            
             NSString* assetType = [result valueForProperty:ALAssetPropertyType];
+            
             if ([assetType isEqualToString:ALAssetTypePhoto]) {
                 NSLog(@"Photo");
-                NSLog(@"__%@++%lu", result, (unsigned long)index);
+                
             }else if([assetType isEqualToString:ALAssetTypeVideo]){
                 NSLog(@"Video");
-                NSLog(@"__%@++%lu", result, (unsigned long)index);
+               
             }else if([assetType isEqualToString:ALAssetTypeUnknown]){
                 NSLog(@"Unknow AssetType");
-                NSLog(@"__%@++%lu", result, (unsigned long)index);
+               
             }
             
             NSDictionary *assetUrls = [result valueForProperty:ALAssetPropertyURLs];
@@ -75,9 +88,14 @@ static int count=0;
     }];
     */
     
+    UIBarButtonItem *leftItem = [[UIBarButtonItem alloc] initWithTitle:@"分组" style:UIBarButtonItemStylePlain target:self action:@selector(toGroupView)];
+    self.navigationItem.leftBarButtonItem = leftItem;
     
-    [self getAllPictures];
+    UIBarButtonItem *rightItem = [[UIBarButtonItem alloc] initWithTitle:@"发送" style:UIBarButtonItemStylePlain target:self action:@selector(sendImage)];
+    self.navigationItem.rightBarButtonItem = rightItem;
     
+//    [self getAllPictures];
+    [self getAllMedias];
     
 }
 
@@ -86,6 +104,7 @@ static int count=0;
     UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
     layout.minimumLineSpacing = 10;
     layout.minimumInteritemSpacing = 10;
+    layout.sectionInset = UIEdgeInsetsMake(20, 20, 0, 20);
     
     _collectionView = [[UICollectionView alloc] initWithFrame:CGRectMake(0, 64, CGRectGetWidth(self.view.frame), CGRectGetHeight(self.view.frame) - 64 - 49) collectionViewLayout:layout];
     _collectionView.backgroundColor = [UIColor yellowColor];
@@ -101,7 +120,7 @@ static int count=0;
     [self.view addSubview:toolView];
     
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-    [button setTitle:@"click" forState:UIControlStateNormal];
+    [button setTitle:@"预览" forState:UIControlStateNormal];
     button.frame = CGRectMake(0, 0, 100, 40);
     button.center = CGPointMake(CGRectGetWidth(toolView.frame) / 2., 24.5);
     [button addTarget: self action:@selector(preView) forControlEvents:UIControlEventTouchUpInside];
@@ -116,9 +135,44 @@ static int count=0;
     ScrollViewController *scrollVC = [[ScrollViewController alloc] init];
     
     scrollVC.dataDic = _dataDic;
+    
+    /**
+     *  返回最终 的图片数组
+     */
+    scrollVC.selectedImages = ^(NSArray *images) {
+        
+        NSLog(@"最终 的图片数组 : %@", images);
+    };
+    scrollVC.selectedDic = ^(NSDictionary *dic) {
+        NSArray *allKeys = dic.allKeys;
+        for (NSString *key in allKeys) {
+            UIImage *image = (UIImage *)dic[key];
+            NSInteger row = [key integerValue];
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:row inSection:0];
+            SHBCell *cell = (SHBCell *)[_collectionView cellForItemAtIndexPath:indexPath];
+            if (cell.flag) {
+                [_dataDic setObject:image forKey:key];
+            } else {
+                [_dataDic removeObjectForKey:key];
+            }
+        }
+    };
+    
     [self.navigationController pushViewController:scrollVC animated:YES];
-
 }
+
+#pragma mark - 分组
+- (void)toGroupView {
+    GroupViewController *groupVC = [[GroupViewController alloc] init];
+    [self.navigationController pushViewController:groupVC animated:YES];
+}
+
+#pragma mark - 发送
+- (void)sendImage {
+    NSLog(@"被选的图片: %@", _dataDic);
+}
+
+#pragma mark - UICollectionViewDelegate & UICollectionViewDataSource
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
 
@@ -136,11 +190,8 @@ static int count=0;
 }
 
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
-    UIImage *image = (UIImage *)imageArray[indexPath.row];
-    CGFloat itemW = CGRectGetWidth(_collectionView.frame) / 2.3;
-    CGFloat itemH = image.size.height * itemW / image.size.width;
-    
-    return CGSizeMake(itemW, itemH);
+
+    return CGSizeMake(100, 100);
 }
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
@@ -151,7 +202,6 @@ static int count=0;
     SHBCell *cell = (SHBCell *)[collectionView cellForItemAtIndexPath:indexPath];
     if (cell.flag) {
         [_dataDic setObject:image forKey:row];
-//        [_dataDic setValue:image forKey:row];
         
     } else {
         [_dataDic removeObjectForKey:row];
@@ -159,10 +209,46 @@ static int count=0;
 
 }
 
+- (void)getAllMedias {
+    NSMutableArray *tempImages = [[NSMutableArray alloc] initWithCapacity:0];
+    
+    ALAssetsLibrary *assLibrary = [[ALAssetsLibrary alloc] init];
+    [assLibrary enumerateGroupsWithTypes:ALAssetsGroupAll usingBlock:^(ALAssetsGroup *group, BOOL *stop) {
+        if (group) {
+            [_groupArray addObject:group];
+            
+            [group enumerateAssetsUsingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {
+                if (result) {
+                    
+                    NSURL *url = (NSURL *)[result defaultRepresentation].url;
+                    [_medioArray addObject:url];
+                    
+                    [assLibrary assetForURL:url resultBlock:^(ALAsset *asset) {
+                        
+                        ALAssetRepresentation *detail = [asset defaultRepresentation];
+                        
+                        UIImage *image = [UIImage imageWithCGImage:[detail fullResolutionImage]];
+                        
+                        [tempImages addObject:image];
+                        if (tempImages.count == group.numberOfAssets) {
+                            imageArray = tempImages;
+                            [self creatCollectionView];
+                        }
+                        
+                    } failureBlock:^(NSError *error) {
+                        
+                    }];
+                }
+            }];
+        }
+    } failureBlock:^(NSError *error) {
+        
+    }];
+}
 
--(void)getAllPictures
 
-{
+#pragma mark - 获取所有图片
+-(void)getAllPictures {
     
     imageArray=[[NSArray alloc] init];
     
@@ -180,12 +266,9 @@ static int count=0;
                 
                 [assetURLDictionaries addObject:[result valueForProperty:ALAssetPropertyURLs]];
                 
-                NSURL *url= (NSURL*) [[result defaultRepresentation]url];
+                NSURL *url= (NSURL*) [[result defaultRepresentation] url];
                 
-                
-                [library assetForURL:url
-                 
-                         resultBlock:^(ALAsset *asset) {
+                [library assetForURL:url resultBlock:^(ALAsset *asset) {
                              
                              [mutableArray addObject:[UIImage imageWithCGImage:[[asset defaultRepresentation] fullScreenImage]]];
                              
@@ -195,8 +278,6 @@ static int count=0;
                                  
                                  imageArray=[[NSArray alloc] initWithArray:mutableArray];
                                  
-                                 [self allPhotosCollected:imageArray];
-                                 
                                  /**
                                   *  创建 集合视图
                                   */
@@ -204,9 +285,10 @@ static int count=0;
                                  
                              }
                              
-                         }
-                 
-                        failureBlock:^(NSError *error){ NSLog(@"operation was not successfull!"); } ];
+                         } failureBlock:^(NSError *error){ NSLog(@"operation was not successfull!"); } ];
+                
+                
+                
                 
             }
             
@@ -218,16 +300,16 @@ static int count=0;
     
     NSMutableArray *assetGroups = [[NSMutableArray alloc] init];
     
-    
-    
     void (^ assetGroupEnumerator) ( ALAssetsGroup *, BOOL *)= ^(ALAssetsGroup *group, BOOL *stop) {
         
-        if(group != nil) {
+        if(group) {
             
             [group enumerateAssetsUsingBlock:assetEnumerator];
+            NSString *groupName = [group valueForProperty:ALAssetsGroupPropertyName];
+            NSDate *date = [group valueForProperty:ALAssetPropertyDate];
             
-            [assetGroups addObject:group];
-            
+            [assetGroups addObject:groupName];
+            NSLog(@"^^^^^\n%@\n", group);
             count = [group numberOfAssets];
             
         }
@@ -238,27 +320,16 @@ static int count=0;
     
     assetGroups = [[NSMutableArray alloc] init];
     
-    
-    
     [library enumerateGroupsWithTypes:ALAssetsGroupAll
      
                            usingBlock:assetGroupEnumerator
      
                          failureBlock:^(NSError *error) {NSLog(@"There is an error");}];
     
-}
-
-
-
--(void)allPhotosCollected:(NSArray*)imgArray
-
-{
-    
-    //write your code here after getting all the photos from library...
-    
-    NSLog(@"all pictures are %@",imgArray);
     
 }
+
+
 
 
 
