@@ -20,6 +20,8 @@
 @property (nonatomic, retain) UIImage *image;
 @property (nonatomic, assign) BOOL isViewing;
 @property (nonatomic, retain)UIView *containerView;
+@property (nonatomic, copy) void(^singleClicked)();
+
 
 - (void)resetViewFrame:(CGRect)newFrame;
 - (void)updateImage:(UIImage *)image;

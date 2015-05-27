@@ -9,6 +9,7 @@
 #import "ScrollViewController.h"
 #import "ZoomView.h"
 #import "GroupViewController.h"
+#import <HexColor.h>
 
 @interface ScrollViewController ()<UIScrollViewDelegate>
 
@@ -23,6 +24,8 @@
     
     NSMutableArray *selectArray;
     NSMutableDictionary *selectDic;
+    UILabel *_btnTitle;
+    NSArray *myKeys;
 }
 
 - (void)viewDidLoad {
@@ -34,10 +37,10 @@
     selectDic = [[NSMutableDictionary alloc] initWithCapacity:0];
     
     
-    UIBarButtonItem *rightItem = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(selectImage)];
+    UIBarButtonItem *rightItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"xuanze"] style:UIBarButtonItemStylePlain target:self action:@selector(selectImage)];
     self.navigationItem.rightBarButtonItem = rightItem;
     
-    UIBarButtonItem *leftItem = [[UIBarButtonItem alloc] initWithTitle:@"<" style:UIBarButtonItemStylePlain target:self action:@selector(goToGroup)];
+    UIBarButtonItem *leftItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"d-back"] style:UIBarButtonItemStylePlain target:self action:@selector(backToPhotos)];
     self.navigationItem.leftBarButtonItem = leftItem;
     
 
@@ -59,30 +62,52 @@
     _scrollView.bounces = NO;
     
     [self.view addSubview:_scrollView];
-
+    
     NSArray *allKeys = _dataDic.allKeys;
-    NSArray *myKeys = [allKeys sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
+    myKeys = [allKeys sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
         return (NSComparisonResult)[obj1 compare:obj2 options:NSNumericSearch];
     }];
-    for (int i = 0; i < allKeys.count; i++) {
-        [selectArray addObject:@1];
-        
-        UIImage *image = (UIImage *)[_dataDic valueForKey:myKeys[i]];
-        
-        ZoomView *view = [[ZoomView alloc] initWithFrame:CGRectMake(maxWidth * i, 0, maxWidth, maxHeight)];
-        view.image = image;
-        [view updateImage:image];
-        [_scrollView addSubview:view];
-     
-    }
+    
     UIView *toolView = [[UIView alloc] initWithFrame:CGRectMake(0, maxHeight - 49, maxWidth, 49)];
-    toolView.backgroundColor = [UIColor whiteColor];
+    toolView.backgroundColor = [UIColor colorWithHexString:@"413f55"];
+    
     UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
-    [btn setTitle:@"Send" forState:UIControlStateNormal];
+    [btn setTitle:@"确定" forState:UIControlStateNormal];
+    btn.titleEdgeInsets = UIEdgeInsetsMake(0, 5, 0, 0);
+    [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [btn setImage:[UIImage imageNamed:@"yuan"] forState:UIControlStateNormal];
     btn.frame = CGRectMake(maxWidth - 100, 0, 100, 49);
     [btn addTarget:self action:@selector(sendImage) forControlEvents:UIControlEventTouchUpInside];
     [toolView addSubview:btn];
+    
+    _btnTitle = [[UILabel alloc] initWithFrame:btn.imageView.bounds];
+    _btnTitle.textAlignment = NSTextAlignmentCenter;
+    _btnTitle.textColor = [UIColor whiteColor];
+    _btnTitle.font = [UIFont systemFontOfSize:11];
+    _btnTitle.text = [NSString stringWithFormat:@"%lu", (unsigned long)allKeys.count];
+    [btn.imageView addSubview:_btnTitle];
+    
     [self.view addSubview:toolView];
+
+
+    for (int i = 0; i < allKeys.count; i++) {
+        [selectArray addObject:@1];
+        UIImage *image = (UIImage *)[_dataDic valueForKey:myKeys[i]];
+        ZoomView *view = [[ZoomView alloc] initWithFrame:CGRectMake(maxWidth * i, 0, maxWidth, maxHeight)];
+        view.image = image;
+        view.singleClicked = ^(){
+            if (toolView.hidden == YES) {
+                self.navigationController.navigationBar.hidden = NO;
+                toolView.hidden = NO;
+            } else {
+                self.navigationController.navigationBar.hidden = YES;
+                toolView.hidden = YES;
+            }
+        };
+        [view updateImage:image];
+        [_scrollView addSubview:view];
+    }
+
     
 }
 
@@ -121,38 +146,17 @@
     return newSize;
 }
 
-#pragma mark- 手势事件
-//单击 / 双击 手势
-- (void)TapsAction:(UITapGestureRecognizer *)tap
-{
-    NSInteger tapCount = tap.numberOfTapsRequired;
-    if (2 == tapCount) {
-        //双击
-        NSLog(@"双击");
-        if (_scrollView.minimumZoomScale <= _scrollView.zoomScale && _scrollView.maximumZoomScale > _scrollView.zoomScale) {
-            [_scrollView setZoomScale:_scrollView.maximumZoomScale animated:YES];
-        }else {
-            [_scrollView setZoomScale:_scrollView.minimumZoomScale animated:YES];
-        }
-        
-    }else if (1 == tapCount) {
-        //单击
-        NSLog(@"单击");
-
-        
-    }
-}
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
     NSInteger i = scrollView.contentOffset.x / CGRectGetWidth(self.view.frame);
     NSNumber *count = selectArray[i];
     switch ([count integerValue]) {
         case 0: {
-            [self.navigationItem.rightBarButtonItem setTitle:@"选择"];
+            self.navigationItem.rightBarButtonItem.image = [UIImage imageNamed:@"weixuan"];
             break;
         }
         case 1: {
-            [self.navigationItem.rightBarButtonItem setTitle:@"取消"];
+            self.navigationItem.rightBarButtonItem.image = [UIImage imageNamed:@"xuanze"];
             break;
         }
         default:
@@ -165,52 +169,48 @@
 
 - (void)selectImage {
     NSInteger i = _scrollView.contentOffset.x / CGRectGetWidth(self.view.frame);
-    if ([self.navigationItem.rightBarButtonItem.title isEqualToString:@"选择"]) {
-        [self.navigationItem.rightBarButtonItem setTitle:@"取消"];
+    if (![selectArray[i] integerValue]) {
+        self.navigationItem.rightBarButtonItem.image = [UIImage imageNamed:@"xuanze"];
         selectArray[i] = @1;
     } else {
         selectArray[i] = @0;
-        [self.navigationItem.rightBarButtonItem setTitle:@"选择"];
+        self.navigationItem.rightBarButtonItem.image = [UIImage imageNamed:@"weixuan"];
     }
+    
+    int count = 0;
+    for (NSNumber *num in selectArray) {
+        if ([num integerValue]) {
+            count++;
+        }
+    }
+    _btnTitle.text = [NSString stringWithFormat:@"%d", count];
 }
 
 - (void)sendImage {
-    NSMutableArray *tempArray = [[NSMutableArray alloc] initWithCapacity:0];
-    for (int i = 0; i < selectArray.count; i++) {
-        
-        NSInteger i = _scrollView.contentOffset.x / CGRectGetWidth(self.view.frame);
-        NSNumber *count = selectArray[i];
-        NSArray *allKeys = _dataDic.allKeys;
-        if ([count integerValue]) {
-            NSString *key = allKeys[i];
-            UIImage *image = (UIImage *)_dataDic[key];
-            [tempArray addObject:image];
-        }
-        _images = [NSArray arrayWithArray:tempArray];
-    }
-    if (_selectedImages) {
-        _selectedImages(_images);
-    }
-}
 
-- (void)goToGroup {
     for (int i = 0; i < selectArray.count; i++) {
-        NSInteger i = _scrollView.contentOffset.x / CGRectGetWidth(self.view.frame);
         NSNumber *count = selectArray[i];
-        NSArray *allKeys = _dataDic.allKeys;
-        NSString *key = allKeys[i];
+        
+        
+        NSString *key = myKeys[i];
         if (![count integerValue]) {
-            [selectDic setObject:_dataDic[key] forKey:key];
+            [selectDic setObject:@0 forKey:key];
         }
-        if (_selectedDic) {
-            _selectedDic(selectDic);
-        }
+    }
+    if (_selectedDic) {
+        _selectedDic(selectDic);
     }
     
     [self.navigationController popViewControllerAnimated:YES];
+    
+    
+    
+    
 }
 
-
+- (void)backToPhotos {
+    [self.navigationController popViewControllerAnimated:YES];
+}
 
 @end
 

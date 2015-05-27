@@ -13,11 +13,8 @@
 @property (nonatomic, strong) NSDictionary *dataDic;
 
 /**
- *  存储最终选择的图片
+ *  返回未选中的图片row  row : @0
  */
-@property (nonatomic, strong, readonly) NSArray *images;
-
-@property (nonatomic, copy) void(^selectedImages)(NSArray *images);
 @property (nonatomic, copy) void(^selectedDic)(NSDictionary *dic);
 
 @end

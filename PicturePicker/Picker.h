@@ -11,10 +11,20 @@
 @interface Picker : NSObject
 
 
+/**
+ *  groupNames: 分组名数组 
+    thumDic:    分组缩略图
+    countDic:   分组元素个数
+    detailDic:  分组内图片urls @{filename : @{ALAssetTypePhoto : @[urls], ALAssetTypeVideo : @[urls]}}
+ */
+@property (nonatomic, copy) void(^didSomeSth)(NSArray *groupNames, NSDictionary *thumDic, NSDictionary *countDic, NSDictionary *detailDic);
 
-@property (nonatomic, copy) void(^didSomeSth)(NSArray *groupNames, NSDictionary *thumDic, NSDictionary *countDic);
+/**
+ *  存储的是 url
+ */
+@property (nonatomic, copy) void(^allMedias)(NSDictionary *dataDic);
 
 + (Picker *)sharedPicker;
-- (void)getAllMedias;
+
 
 @end

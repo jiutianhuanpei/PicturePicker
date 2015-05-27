@@ -19,29 +19,28 @@
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
-        UIView *contentView = self.contentView;
-        contentView.backgroundColor = [UIColor whiteColor];
+        self.backgroundColor = [UIColor whiteColor];
         
         _imgView = [[UIImageView alloc] initWithFrame:CGRectZero];
         _imgView.translatesAutoresizingMaskIntoConstraints = NO;
-        [contentView addSubview:_imgView];
+        [self addSubview:_imgView];
         
         _nameLbl = [[UILabel alloc] initWithFrame:CGRectZero];
         _nameLbl.translatesAutoresizingMaskIntoConstraints = NO;
         _nameLbl.font = [UIFont systemFontOfSize:16];
         _nameLbl.textColor = [UIColor colorWithHexString:@"413f55"];
-        [contentView addSubview:_nameLbl];
+        [self addSubview:_nameLbl];
         
         _countLbl = [[UILabel alloc] initWithFrame:CGRectZero];
         _countLbl.translatesAutoresizingMaskIntoConstraints = NO;
         _countLbl.font = [UIFont systemFontOfSize:13];
         _countLbl.textColor = [UIColor colorWithHexString:@"dddcdb"];
-        [contentView addSubview:_countLbl];
+        [self addSubview:_countLbl];
         
         _right = [[UILabel alloc] initWithFrame:CGRectZero];
         _right.translatesAutoresizingMaskIntoConstraints = NO;
         _right.text = @"〉";
-        [contentView addSubview:_right];
+        [self addSubview:_right];
         
         NSDictionary *views = NSDictionaryOfVariableBindings(_imgView, _nameLbl, _countLbl, _right);
         
@@ -52,7 +51,7 @@
         [array addObject:[NSLayoutConstraint constraintWithItem:_nameLbl attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:_imgView attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
         [array addObject:[NSLayoutConstraint constraintWithItem:_countLbl attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:_imgView attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
         [array addObject:[NSLayoutConstraint constraintWithItem:_right attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:_imgView attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
-        [contentView addConstraints:array];
+        [self addConstraints:array];
         
     }
     return self;
@@ -62,7 +61,7 @@
     
     _imgView.image = model.image;
     _nameLbl.text = model.name;
-    _countLbl.text = model.count;
+    _countLbl.text = [NSString stringWithFormat:@"(%@)", model.count];
     
     
 }

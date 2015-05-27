@@ -8,12 +8,12 @@
 
 #import <UIKit/UIKit.h>
 
-@interface SHBCell : UICollectionViewCell
+@interface PhotoCell : UICollectionViewCell
 
 @property (nonatomic, strong) UIImage *image;
-@property (nonatomic, assign, readonly) BOOL flag;
 
 - (void)addImage:(UIImage *)image;
-- (void)fuzzyView;
+- (void)flagSelected:(BOOL)flag;
+
 
 @end

@@ -10,4 +10,6 @@
 
 @interface GroupViewController : UITableViewController
 
+@property (nonatomic, copy) void(^detailData)(NSDictionary *images);
+
 @end

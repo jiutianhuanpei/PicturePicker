@@ -8,11 +8,6 @@
 
 #import "ZoomView.h"
 
-#define HandDoubleTap 2
-#define HandOneTap 1
-#define MaxZoomScaleNum 5.0
-#define MinZoomScaleNum 1.0
-
 @interface ZoomView ()<UIScrollViewDelegate>
 
 @end
@@ -35,6 +30,10 @@
         _scrollView.showsVerticalScrollIndicator = NO;
         _scrollView.delegate = self;
         _scrollView.bounces = NO;
+        
+        _scrollView.maximumZoomScale = 4;
+        _scrollView.minimumZoomScale = 1;
+        _scrollView.zoomScale = 1;
         _containerView = [[UIView alloc] initWithFrame:self.bounds];
         [_scrollView addSubview:_containerView];
         
@@ -46,25 +45,18 @@
         //双击
         UITapGestureRecognizer *doubleTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self
                                                                                            action:@selector(TapsAction:)];
-        [doubleTapGesture setNumberOfTapsRequired:HandDoubleTap];
+        [doubleTapGesture setNumberOfTapsRequired:2];
         [_containerView addGestureRecognizer:doubleTapGesture];
         
         //单击
         UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self
                                                                                      action:@selector(TapsAction:)];
-        [tapGesture setNumberOfTapsRequired:HandOneTap];
+        [tapGesture setNumberOfTapsRequired:1];
         [_containerView addGestureRecognizer:tapGesture];
         
         //双击失败之后执行单击
         [tapGesture requireGestureRecognizerToFail:doubleTapGesture];
 
-
-        _scrollView.maximumZoomScale = MaxZoomScaleNum;
-        _scrollView.minimumZoomScale = MinZoomScaleNum;
-        _scrollView.zoomScale = MinZoomScaleNum;
-
-        
-        
     }
     return self;
 }
@@ -74,23 +66,25 @@
 - (void)TapsAction:(UITapGestureRecognizer *)tap
 {
     NSInteger tapCount = tap.numberOfTapsRequired;
-    if (HandDoubleTap == tapCount) {
+    if (2 == tapCount) {
         //双击
-        NSLog(@"双击");
         if (_scrollView.minimumZoomScale <= _scrollView.zoomScale && _scrollView.maximumZoomScale > _scrollView.zoomScale) {
             [_scrollView setZoomScale:_scrollView.maximumZoomScale animated:YES];
         }else {
             [_scrollView setZoomScale:_scrollView.minimumZoomScale animated:YES];
         }
         
-    }else if (HandOneTap == tapCount) {
-        //单击
-        NSLog(@"单击");
-        //        NSLog(@"imgUrl: %@, imgSize:(%f, %f) zoomScale:%f",downImgUrl,self.imageView.frame.size.width,self.imageView.frame.size.height,_scrollView.zoomScale);
+    }else if (1 == tapCount) {
+        if (_singleClicked) {
+            _singleClicked();
+        }
         
     }
 }
 
+-(UIView *)viewForZoomingInScrollView:(UIScrollView *)scrollView {
+    return _containerView;
+}
 
 - (void)resetViewFrame:(CGRect)newFrame
 {

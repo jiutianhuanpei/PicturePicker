@@ -14,22 +14,13 @@
     
     NSMutableDictionary *_dataDic; // 被选中的图片
     
-    NSMutableArray *_groupArray;
-    NSMutableArray *_medioArray;
 
     
 }
 
 + (Picker *)sharedPicker {
-    static Picker *picker = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        if (!picker) {
-            picker = [[Picker alloc] init];
-            
-        }
-    });
-    
+    Picker *picker = [[Picker alloc] init];
+    [picker getAllMedias];
     return picker;
 }
 
@@ -37,31 +28,63 @@
     NSMutableArray *fileNames = [[NSMutableArray alloc] initWithCapacity:0];
     NSMutableDictionary *countDic = [[NSMutableDictionary alloc] initWithCapacity:0];
     NSMutableDictionary *thumDic = [[NSMutableDictionary alloc] initWithCapacity:0];
+    NSMutableDictionary *detailImageDic = [[NSMutableDictionary alloc] initWithCapacity:0];
+    
+    NSMutableArray *photos = [[NSMutableArray alloc] initWithCapacity:0];
+    NSMutableArray *viedos = [[NSMutableArray alloc] initWithCapacity:0];
+    
+    NSMutableDictionary *dataDic = [[NSMutableDictionary alloc] initWithCapacity:0];
     
     ALAssetsLibrary *assLibrary = [[ALAssetsLibrary alloc] init];
     [assLibrary enumerateGroupsWithTypes:ALAssetsGroupAll usingBlock:^(ALAssetsGroup *group, BOOL *stop) {
         if (group) {
+           
             NSString *fileName = [group valueForProperty:ALAssetsGroupPropertyName];
-
+            NSMutableDictionary *groupDic = [[NSMutableDictionary alloc] initWithCapacity:0];
+            
+            if ([fileName isEqualToString:@"Camera Roll"]) {
+                fileName = @"相机胶卷";
+            }
             
             [fileNames addObject:fileName];
             
+            UIImage *image = [UIImage imageWithCGImage:[group posterImage]];
+            [thumDic setObject:image forKey:fileName];
             
             [countDic setObject:@(group.numberOfAssets) forKey:fileName];
             
-            
-            
+            NSMutableArray *detail = [[NSMutableArray alloc] initWithCapacity:0];
+            NSInteger count = group.numberOfAssets;
             [group enumerateAssetsUsingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {
                 if (result) {
+                    ALAssetRepresentation *representation = [result defaultRepresentation];
                     
-                    UIImage *thumImg = [UIImage imageWithCGImage:result.thumbnail];
-                    [thumDic setObject:thumImg forKey:fileName];
+                    NSURL *url = (NSURL *)representation.url;
+                    if ([[result valueForProperty:ALAssetPropertyType] isEqualToString:ALAssetTypePhoto]) {
+                        [photos addObject:url];
+                        [dataDic setObject:photos forKey:ALAssetTypePhoto];
+                        [groupDic setObject:photos forKey:ALAssetTypePhoto];
+                    } else if ([[result valueForProperty:ALAssetPropertyType] isEqualToString:ALAssetTypeVideo]) {
+                        [viedos addObject:url];
+                        [dataDic setObject:viedos forKey:ALAssetTypeVideo];
+                        [groupDic setObject:viedos forKey:ALAssetTypeVideo];
+                    }
                     
-                    NSURL *url = (NSURL *)[result defaultRepresentation].url;
-                    [_medioArray addObject:url];
-                    
-                    if (_didSomeSth) {
-                        _didSomeSth(fileNames, thumDic, countDic);
+                    UIImage *detailImage = [UIImage imageWithCGImage:representation.fullResolutionImage];
+                    [detail addObject:detailImage];
+                    if (detail.count == count) {
+//                        [detailImageDic setObject:detail forKey:fileName];
+                        [detailImageDic setObject:groupDic forKey:fileName];
+                        
+                        
+                        if (_allMedias) {
+                            _allMedias(dataDic);
+                        }
+                        
+                        if (_didSomeSth) {
+                            _didSomeSth(fileNames, thumDic, countDic, detailImageDic);
+                        }
+                        
                     }
                     
                 }
